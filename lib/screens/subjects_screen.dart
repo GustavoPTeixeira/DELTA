@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 import 'reading_screen.dart';
 
 class SubjectsScreen extends StatelessWidget {
@@ -31,7 +31,7 @@ class SubjectsScreen extends StatelessWidget {
             onPressed: () async {
               // Sign out from Firebase Auth.
               // StreamBuilder in main.dart automatically reverts to LoginScreen.
-              await FirebaseAuth.instance.signOut();
+              await AuthService().logout();
             },
           ),
         ],

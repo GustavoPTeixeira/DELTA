@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -11,6 +10,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
@@ -31,56 +31,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      final username = _usernameController.text.trim().toLowerCase();
-      final email = _emailController.text.trim().toLowerCase();
-      final password = _passwordController.text.trim();
-
-      // 1. Uniqueness validation: check if username is already taken in Firestore
-      final existingUsers = await FirebaseFirestore.instance
-          .collection('users')
-          .where('username', isEqualTo: username)
-          .limit(1)
-          .get();
-
-      // Legacy fallback check if needed
-      final legacyUsers = existingUsers.docs.isEmpty
-          ? await FirebaseFirestore.instance
-              .collection('usuarios')
-              .where('nome_usuario', isEqualTo: username)
-              .limit(1)
-              .get()
-          : null;
-
-      if (existingUsers.docs.isNotEmpty || (legacyUsers != null && legacyUsers.docs.isNotEmpty)) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Este nome de usuário já está em uso. Tente outro!'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      // 2. Create authentication credentials with Firebase Auth (RF1)
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+      await _authService.register(
+        name: _nameController.text,
+        username: _usernameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
       );
-
-      // 3. Persist user profile data into Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        'name': _nameController.text.trim(),
-        'username': username,
-        'email': email,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // 4. Return to previous screen on success
-      if (mounted) {
+      if (mounted){
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -89,13 +51,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
       }
-    } on FirebaseAuthException catch (e) {
+    } on AuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erro ao cadastrar: ${e.message}'),
+          content: Text(e.message),
           backgroundColor: Colors.red,
-        ),
+        )
       );
     } catch (e) {
       if (!mounted) return;
@@ -103,15 +65,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SnackBar(
           content: Text('Erro inesperado: $e'),
           backgroundColor: Colors.red,
-        ),
+        )
       );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
+      if(mounted){
+        setState(() {
+          _isLoading = false;
+        });
       }
-    }
   }
-
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'question_screen.dart';
 
 class ReadingScreen extends StatelessWidget {
   const ReadingScreen({super.key});
@@ -28,7 +29,14 @@ class ReadingScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
               onPressed: () {
-                debugPrint("Navigate to questionnaire (RF5)");
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:(context) => const QuestionScreen(
+                      title: 'Língua Portuguesa',
+                    ),
+                  ),
+                );
               },
               child: const Text('PRÓXIMA QUESTÃO', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             ),

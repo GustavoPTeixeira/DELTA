@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,6 +12,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _identifierController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
+
   bool _isLoading = false;
 
   @override
@@ -26,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final input = _identifierController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (input.isEmpty || password.isEmpty) {
+    if(input.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor, preencha todos os campos.'),
@@ -36,73 +37,20 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      String resolvedEmail = input;
-
-      // If input doesn't contain '@', treat it as a username and resolve its email from Firestore
-      if (!input.contains('@')) {
-        final normalizedUsername = input.toLowerCase();
-
-        // 1. Primary lookup in 'users' collection
-        final userQuery = await FirebaseFirestore.instance
-            .collection('users')
-            .where('username', isEqualTo: normalizedUsername)
-            .limit(1)
-            .get();
-
-        // 2. Fallback lookup in legacy 'usuarios' collection
-        final legacyQuery = userQuery.docs.isEmpty
-            ? await FirebaseFirestore.instance
-                .collection('usuarios')
-                .where('nome_usuario', isEqualTo: normalizedUsername)
-                .limit(1)
-                .get()
-            : null;
-
-        final matchedDocs = userQuery.docs.isNotEmpty
-            ? userQuery.docs
-            : (legacyQuery?.docs ?? []);
-
-        if (matchedDocs.isEmpty) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Nome de usuário não encontrado.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-
-        resolvedEmail = matchedDocs.first.data()['email'] as String;
-      }
-
-      // Authenticate against Firebase Auth with resolved email
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: resolvedEmail,
+      await _authService.login(
+        identifier: input,
         password: password,
       );
-
-      // The StreamBuilder in main.dart listens to authStateChanges()
-      // and will automatically transition to SubjectsScreen upon success.
-    } on FirebaseAuthException catch (e) {
-      debugPrint("Login error: ${e.code} - ${e.message}");
+    } on AuthException catch (e) {
       if (!mounted) return;
-
-      String errorMessage = 'E-mail/usuário ou senha inválidos.';
-      if (e.code == 'user-not-found') {
-        errorMessage = 'Usuário não encontrado.';
-      } else if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
-        errorMessage = 'Senha incorreta.';
-      } else if (e.code == 'invalid-email') {
-        errorMessage = 'Formato de e-mail inválido.';
-      }
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage),
+          content: Text(e.message),
           backgroundColor: Colors.red,
         ),
       );
@@ -116,14 +64,15 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
 
   void _showPasswordResetDialog() {
     final TextEditingController resetEmailController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -164,11 +113,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                   return;
                 }
-
-                Navigator.pop(dialogContext); // Close dialog using its specific context
-
+                Navigator.pop(dialogContext); // Fecha o modal
                 try {
-                  await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                  // O AuthService dispara o e-mail oficial
+                  await _authService.sendPasswordResetEmail(email);
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -176,11 +124,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } on FirebaseAuthException catch (e) {
+                } on AuthException catch (e) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Erro ao enviar e-mail: ${e.message}'),
+                      content: Text(e.message),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro ao enviar e-mail: $e'),
                       backgroundColor: Colors.red,
                     ),
                   );

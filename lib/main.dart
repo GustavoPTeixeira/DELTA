@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/subjects_screen.dart';
+import 'services/auth_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +29,7 @@ class DeltaApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
       ),
       home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
+        stream: AuthService().authStateChanges,
         builder: (context, snapshot) {
           // If a persistent session exists, navigate directly to subjects
           if (snapshot.hasData) {
