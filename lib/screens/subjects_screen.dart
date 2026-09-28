@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../services/auth_service.dart';
+import 'profile_screen.dart';
 import 'reading_screen.dart';
 
 class SubjectsScreen extends StatelessWidget {
@@ -13,7 +15,7 @@ class SubjectsScreen extends StatelessWidget {
     'História',
     'Língua inglesa',
     'Língua Portuguesa',
-    'Matemática'
+    'Matemática',
   ];
 
   @override
@@ -25,6 +27,16 @@ class SubjectsScreen extends StatelessWidget {
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Meu Perfil',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sair da conta',
@@ -42,13 +54,22 @@ class SubjectsScreen extends StatelessWidget {
           return Column(
             children: [
               ListTile(
-                title: Text(subjects[index], style: const TextStyle(fontSize: 16)),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                title: Text(
+                  subjects[index],
+                  style: const TextStyle(fontSize: 16),
+                ),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey,
+                ),
                 onTap: () {
                   // Currently redirecting all subjects to the sample science reading text
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ReadingScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const ReadingScreen(),
+                    ),
                   );
                 },
               ),

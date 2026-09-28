@@ -22,8 +22,8 @@ class UserModel {
       'username': username,
       'email': email,
       'createdAt': createdAt != null
-        ? Timestamp.fromDate(createdAt!)
-        : FieldValue.serverTimestamp(),
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
     };
   }
 
@@ -32,15 +32,31 @@ class UserModel {
     if (map['createdAt'] != null) {
       if (map['createdAt'] is Timestamp) {
         parsedDate = (map['createdAt'] as Timestamp).toDate();
+      }
     }
+
+    return UserModel(
+      uid: documentId,
+      name: map['name'] ?? '',
+      username: map['username'] as String? ?? '',
+      email: map['email'] as String? ?? '',
+      createdAt: parsedDate ?? DateTime.now(),
+    );
   }
 
-  return UserModel(
-    uid: documentId,
-    name: map['name'] ?? '',
-    username: map['username'] as String? ?? '',
-    email: map['email'] as String? ?? '',
-    createdAt: parsedDate ?? DateTime.now(), 
-  );
-}
+  UserModel copyWith({
+    String? uid,
+    String? name,
+    String? username,
+    String? email,
+    DateTime? createdAt,
+  }) {
+    return UserModel(
+      uid: uid ?? this.uid,
+      name: name ?? this.name,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }
