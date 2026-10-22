@@ -15,6 +15,22 @@ class UserModel {
     this.createdAt,
   });
 
+   UserModel copyWith({
+    String? uid,
+    String? name,
+    String? username,
+    String? email,
+    DateTime? createdAt,
+  }) {
+    return UserModel(
+      uid: uid ?? this.uid,
+      name: name ?? this.name,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
