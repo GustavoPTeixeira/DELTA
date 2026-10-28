@@ -1,0 +1,211 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // This security rules file assumes the following data structures:
+    //
+    // Collection: users
+    // Document ID: {userId} (matches Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required, immutable, must match userId & request.auth.uid)
+    //   - name: string (required, 1..100 chars) - User display name
+    //   - username: string (required, 1..50 chars, lowercase) - Unique handle
+    //   - email: string (required, immutable, valid email, 3..254 chars)
+    //   - role: string (required on create, immutable by user, enum: ['student', 'teacher'])
+    //           Self-registration (create) MUST set role == 'student'.
+    //           Teacher promotion is restricted to Firebase Console / Admin SDK.
+    //   - createdAt: timestamp (required on create, immutable)
+    //
+    // Collection: usuarios (Legacy read-only collection)
+    // Document ID: {docId}
+    // Fields:
+    //   - nome_usuario: string - Legacy username field queried during login/registration
+    //   - email: string - Legacy email field resolved during username login
+    //
+    // Collection: questions (Teacher-managed question bank)
+    // Document ID: {questionId}
+    // Fields:
+    //   - id: string (required, 1..100 chars)
+    //   - statement: string (required, 1..5000 chars)
+    //   - options: list of strings (required, 2..10 items)
+    //   - correctOptionIndex: int (required, >= 0)
+    //   - explanation: string (optional, 0..3000 chars)
+    //
+    // Collection: texts / classes (Teacher-managed educational resources)
+    //   - Read access: authenticated users (students & teachers)
+    //   - Write access: restricted strictly to users with role == 'teacher'
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the authenticated user owns the document by path userId
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if the authenticated user has the 'teacher' role in their profile document
+    function isTeacher() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    // Validate that all required fields exist on the incoming document
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // Validate that the document contains only explicitly allowed fields
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Validate that immutable fields have not been modified on update
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // Validate string type and character length bounds
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+
+    // Validate optional string (if present and non-null, must be string within bounds)
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+             request.resource.data[field] == null ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    // Validate email format
+    function isValidEmail(email) {
+      return email is string &&
+             email.size() >= 3 &&
+             email.size() <= 254 &&
+             email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // Validate list type and size bounds
+    function isValidList(listData, minSize, maxSize) {
+      return listData is list &&
+             listData.size() >= minSize &&
+             listData.size() <= maxSize;
+    }
+
+    // ===============================================================
+    // Domain Validators (Used in create and update)
+    // ===============================================================
+
+    // Validate user document creation (AC4: self-registration is strictly 'student')
+    function isValidUserCreate(userId) {
+      return hasOnlyAllowedFields(['uid', 'name', 'username', 'email', 'role', 'createdAt']) &&
+             hasRequiredFields(['uid', 'name', 'username', 'email', 'role', 'createdAt']) &&
+             request.resource.data.uid is string &&
+             request.resource.data.uid == userId &&
+             request.resource.data.uid == request.auth.uid &&
+             validStringLength('name', 1, 100) &&
+             validStringLength('username', 1, 50) &&
+             isValidEmail(request.resource.data.email) &&
+             request.resource.data.role == 'student' &&
+             request.resource.data.createdAt is timestamp;
+    }
+
+    // Validate user profile update (AC3 / CT04: owner can only update name & username;
+    // role, uid, email, and createdAt are strictly immutable)
+    function isValidUserUpdate() {
+      return hasOnlyAllowedFields(['uid', 'name', 'username', 'email', 'role', 'createdAt']) &&
+             areImmutableFieldsUnchanged(['uid', 'email', 'role', 'createdAt']) &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'username']) &&
+             validStringLength('name', 1, 100) &&
+             validStringLength('username', 1, 50) &&
+             (!('role' in request.resource.data) || request.resource.data.role in ['student', 'teacher']);
+    }
+
+    // Validate QuestionModel document created/updated by a teacher
+    function isValidQuestion() {
+      return hasOnlyAllowedFields(['id', 'statement', 'options', 'correctOptionIndex', 'explanation']) &&
+             hasRequiredFields(['id', 'statement', 'options', 'correctOptionIndex']) &&
+             validStringLength('id', 1, 100) &&
+             validStringLength('statement', 1, 5000) &&
+             isValidList(request.resource.data.options, 2, 10) &&
+             request.resource.data.correctOptionIndex is int &&
+             request.resource.data.correctOptionIndex >= 0 &&
+             request.resource.data.correctOptionIndex < request.resource.data.options.size() &&
+             isValidOptionalString('explanation', 0, 3000);
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // Users collection
+    match /users/{userId} {
+      // Single-document reads restricted to the profile owner or a teacher.
+      allow get: if isOwner(userId) || isTeacher();
+
+      // Bounded queries (limit == 1) are required before authentication for
+      // AuthService.isUsernameAvailable() and AuthService.login() username lookup;
+      // teachers may list student profiles for class management.
+      allow list: if request.query.limit <= 1 || isTeacher();
+
+      // Self-registration (AC4): user can only create their own document with role == 'student'.
+      allow create: if isOwner(userId) && isValidUserCreate(userId);
+
+      // Profile update (AC3 / CT04): user can only update their own name/username
+      // and cannot escalate role or alter uid, email, or createdAt.
+      allow update: if isOwner(userId) && isValidUserUpdate();
+
+      // Client-side deletion of user profiles is disallowed.
+      allow delete: if false;
+    }
+
+    // Legacy 'usuarios' collection (read-only fallback for username availability & login)
+    match /usuarios/{docId} {
+      allow get: if isAuthenticated();
+      allow list: if request.query.limit <= 1 || isAuthenticated();
+      allow write: if false;
+    }
+
+    // Teacher-managed question bank (AC3: only teachers can create/update/delete)
+    match /questions/{questionId} {
+      allow read: if isAuthenticated();
+      allow create: if isTeacher() && isValidQuestion();
+      allow update: if isTeacher() && isValidQuestion();
+      allow delete: if isTeacher();
+    }
+
+    // Teacher-managed reading texts (AC3: only teachers can write)
+    match /texts/{textId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacher();
+    }
+
+    // Teacher-managed classes/turmas (AC3: only teachers can write)
+    match /classes/{classId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacher();
+    }
+
+    // Default deny for all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
