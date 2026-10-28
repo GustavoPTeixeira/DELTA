@@ -17,8 +17,8 @@ service cloud.firestore {
     //   - username: string (required, 1..50 chars, lowercase) - Unique handle
     //   - email: string (required, immutable, valid email, 3..254 chars)
     //   - role: string (required on create, immutable by user, enum: ['student', 'teacher'])
-    //           Self-registration (create) MUST set role == 'student'.
-    //           Teacher promotion is restricted to Firebase Console / Admin SDK.
+    //           Self-registration (create) allows selecting 'student' or 'teacher'.
+    //           Once created, role is strictly immutable on client updates.
     //   - createdAt: timestamp (required on create, immutable)
     //
     // Collection: usuarios (Legacy read-only collection)
@@ -113,7 +113,7 @@ service cloud.firestore {
     // Domain Validators (Used in create and update)
     // ===============================================================
 
-    // Validate user document creation (AC4: self-registration is strictly 'student')
+    // Validate user document creation (KAN-13 / KAN-14: self-registration allows 'student' or 'teacher')
     function isValidUserCreate(userId) {
       return hasOnlyAllowedFields(['uid', 'name', 'username', 'email', 'role', 'createdAt']) &&
              hasRequiredFields(['uid', 'name', 'username', 'email', 'role', 'createdAt']) &&
@@ -123,7 +123,7 @@ service cloud.firestore {
              validStringLength('name', 1, 100) &&
              validStringLength('username', 1, 50) &&
              isValidEmail(request.resource.data.email) &&
-             request.resource.data.role == 'student' &&
+             request.resource.data.role in ['student', 'teacher'] &&
              request.resource.data.createdAt is timestamp;
     }
 
@@ -165,7 +165,7 @@ service cloud.firestore {
       // teachers may list student profiles for class management.
       allow list: if request.query.limit <= 1 || isTeacher();
 
-      // Self-registration (AC4): user can only create their own document with role == 'student'.
+      // Self-registration (KAN-13 / KAN-14): user can only create their own document with role in ['student', 'teacher'].
       allow create: if isOwner(userId) && isValidUserCreate(userId);
 
       // Profile update (AC3 / CT04): user can only update their own name/username
