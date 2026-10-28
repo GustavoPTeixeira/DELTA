@@ -164,4 +164,70 @@ class AuthService {
         return e.message ?? 'Ocorreu um erro desconhecido. Tente novamente.';
     }
 }
+  Future<UserModel?> getUserProfile(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists && doc.data() != null) {
+        return UserModel.fromMap(doc.data()!, doc.id);
+      }
+      return null;
+    } on FirebaseException catch (e) {
+      throw AuthException('Erro ao carregar dados do perfil: ${e.message}');
+    } catch (e) {
+      throw AuthException('Ocorreu um erro inesperado ao carregar o perfil: $e');
+    }
+  }
+
+  Future<UserModel> updateUserProfile({
+    required String uid,
+    required String name,
+    required String username,
+    String? currentUsername,
+  }) async {
+    final cleanName = name.trim();
+    final cleanUsername = username.trim().toLowerCase();
+    // 1. Validações básicas de preenchimento
+    if (cleanName.isEmpty) {
+      throw AuthException('O nome não pode ficar vazio.');
+    }
+    if (cleanUsername.isEmpty) {
+      throw AuthException('O nome de usuário não pode ficar vazio.');
+    }
+    // 2. Se o username foi alterado, valida disponibilidade no Firestore (Regra da Issue #1)
+    final normalizedCurrent = currentUsername?.trim().toLowerCase();
+    if (normalizedCurrent != cleanUsername) {
+      final isAvailable = await isUsernameAvailable(cleanUsername);
+      if (!isAvailable) {
+        throw AuthException('O nome de usuário "@$cleanUsername" já está em uso. Tente outro!');
+      }
+    }
+    try {
+      // 3. Salva no Firestore mesclando com os dados já existentes
+      final userDocRef = _firestore.collection('users').doc(uid);
+      await userDocRef.set({
+        'name': cleanName,
+        'username': cleanUsername,
+      }, SetOptions(merge: true));
+      // 4. Sincroniza o displayName no Firebase Auth
+      await _auth.currentUser?.updateDisplayName(cleanName);
+      // 5. Retorna o perfil atualizado
+      final updatedProfile = await getUserProfile(uid);
+      if (updatedProfile != null) {
+        return updatedProfile;
+      }
+      return UserModel(
+        uid: uid,
+        name: cleanName,
+        username: cleanUsername,
+        email: _auth.currentUser?.email ?? '',
+        createdAt: DateTime.now(),
+      );
+    } on AuthException {
+      rethrow;
+    } on FirebaseException catch (e) {
+      throw AuthException('Erro ao salvar no banco de dados: ${e.message}');
+    } catch (e) {
+      throw AuthException('Ocorreu um erro inesperado ao atualizar: $e');
+    }
+  }
 }
