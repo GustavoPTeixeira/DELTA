@@ -3,17 +3,16 @@ import '../services/auth_service.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
-
+  final AuthService? authService;
+  const LoginScreen({super.key, this.authService});
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
-
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _identifierController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
+  late final AuthService _authService = widget.authService ?? AuthService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
