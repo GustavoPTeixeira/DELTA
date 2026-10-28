@@ -70,6 +70,7 @@ class AuthService {
         name: name.trim(),
         username: cleanUsername,
         email: cleanEmail,
+        role: UserRole.student,
       );
 
       await _firestore.collection('users').doc(uid).set(userModel.toMap());
