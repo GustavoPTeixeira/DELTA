@@ -48,6 +48,7 @@ class AuthService {
     required String username,
     required String email,
     required String password,
+    UserRole role = UserRole.student,
   }) async {
     final cleanUsername = username.trim().toLowerCase();
     final cleanEmail = email.trim().toLowerCase();
@@ -70,7 +71,7 @@ class AuthService {
         name: name.trim(),
         username: cleanUsername,
         email: cleanEmail,
-        role: UserRole.student,
+        role: role,
       );
 
       await _firestore.collection('users').doc(uid).set(userModel.toMap());
