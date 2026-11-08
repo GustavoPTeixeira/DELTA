@@ -97,6 +97,29 @@ flutter run -d windows
 flutter run -d chrome
 ```
 
+### Testes
+```bash
+# Testes unitários e de widget (não acessam o Firebase real)
+flutter test
+
+# Testes das regras do Firestore no emulador (requer Java 21+ e Firebase CLI)
+npm --prefix firestore_tests install   # só na primeira vez
+npm --prefix firestore_tests test
+```
+
+---
+
+## 👩‍🏫 Contas de professor
+
+Quem escolhe **Professor** no cadastro recebe o perfil `teacher_pending` e vê a tela **"Aguardando aprovação"**. As regras do Firestore impedem que alguém se cadastre ou se promova como professor pelo app.
+
+**Para aprovar um professor:**
+1. Abra o [Firebase Console](https://console.firebase.google.com) → projeto `delta-eae4d` → **Firestore Database**.
+2. Na coleção `users`, abra o documento do professor (o ID é o UID dele, visível em **Authentication**).
+3. Altere o campo `role` de `teacher_pending` para `teacher` e salve.
+
+O app do professor muda para a **Área do Professor** na hora, sem precisar sair e entrar de novo. Para recusar, mude o campo `role` para `student`.
+
 ---
 
 ## 🏆 Reconhecimentos e Premiações

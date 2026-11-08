@@ -174,10 +174,19 @@ void main() {
       await tester.tap(find.byType(DropdownButtonFormField<UserRole>));
       await tester.pumpAndSettle();
 
+      expect(
+        find.text('Contas de professor precisam da aprovação de um administrador.'),
+        findsNothing,
+      );
+
       await tester.tap(find.text('Professor').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Professor'), findsOneWidget);
+      expect(
+        find.text('Contas de professor precisam da aprovação de um administrador.'),
+        findsOneWidget,
+      );
     });
   });
 }

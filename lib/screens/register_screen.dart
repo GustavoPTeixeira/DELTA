@@ -150,8 +150,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 20),
               DropdownButtonFormField<UserRole>(
                 initialValue: _selectedRole,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Tipo de Perfil',
+                  helperText: _selectedRole == UserRole.teacher
+                      ? 'Contas de professor precisam da aprovação de um administrador.'
+                      : null,
+                  helperMaxLines: 2,
                 ),
                 items: const [
                   DropdownMenuItem(

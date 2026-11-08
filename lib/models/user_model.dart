@@ -1,15 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum UserRole {
-  student,
-  teacher;
+  student('student'),
+  // Signed up as "Professor"; waits for an admin to set role to 'teacher'.
+  teacherPending('teacher_pending'),
+  teacher('teacher');
 
-static UserRole fromString(String? value) {
-  if (value?.trim().toLowerCase() == 'teacher'){
-    return UserRole.teacher;
+  const UserRole(this.value);
+
+  /// Value stored in Firestore.
+  final String value;
+
+  static UserRole fromString(String? value) {
+    final normalized = value?.trim().toLowerCase();
+    return UserRole.values.firstWhere(
+      (role) => role.value == normalized,
+      orElse: () => UserRole.student,
+    );
   }
-  return UserRole.student;
-}
 }
 
 class UserModel {
@@ -30,6 +38,7 @@ class UserModel {
   });
 
   bool get isTeacher => role == UserRole.teacher;
+  bool get isPendingTeacher => role == UserRole.teacherPending;
 
    UserModel copyWith({
     String? uid,
@@ -55,7 +64,7 @@ class UserModel {
       'name': name,
       'username': username,
       'email': email,
-      'role': role.name,
+      'role': role.value,
       'createdAt': createdAt != null
         ? Timestamp.fromDate(createdAt!)
         : FieldValue.serverTimestamp(),

@@ -105,4 +105,32 @@ void main() {
       expect(updated.createdAt, original.createdAt);
     });
   });
+
+  group('UserRole teacher_pending (BL-19)', () {
+    test('should parse teacher_pending from Firestore and expose isPendingTeacher', () {
+      final user = UserModel.fromMap({'role': 'teacher_pending'}, 'pending_uid');
+
+      expect(user.role, UserRole.teacherPending);
+      expect(user.isPendingTeacher, isTrue);
+      expect(user.isTeacher, isFalse);
+    });
+
+    test('should serialize teacherPending as teacher_pending (snake case)', () {
+      const user = UserModel(
+        uid: 'pending_uid',
+        name: 'Pending Teacher',
+        username: 'pending',
+        email: 'pending@delta.edu',
+        role: UserRole.teacherPending,
+      );
+
+      expect(user.toMap()['role'], 'teacher_pending');
+    });
+
+    test('should fall back to student for unknown role values', () {
+      expect(UserRole.fromString('admin'), UserRole.student);
+      expect(UserRole.fromString(null), UserRole.student);
+      expect(UserRole.fromString(' Teacher '), UserRole.teacher);
+    });
+  });
 }
