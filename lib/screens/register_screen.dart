@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
+import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
-
+  final AuthService? authService;
+  const RegisterScreen({super.key, this.authService});
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
-
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final AuthService _authService = AuthService();
+  late final AuthService _authService = widget.authService ?? AuthService();
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  UserRole _selectedRole = UserRole.student;
   bool _isLoading = false;
 
   @override
@@ -41,8 +42,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         username: _usernameController.text,
         email: _emailController.text,
         password: _passwordController.text,
+        role: _selectedRole,
       );
-      if (mounted){
+      if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -57,7 +59,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SnackBar(
           content: Text(e.message),
           backgroundColor: Colors.red,
-        )
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -65,16 +67,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SnackBar(
           content: Text('Erro inesperado: $e'),
           backgroundColor: Colors.red,
-        )
+        ),
       );
     } finally {
-      if(mounted){
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
+    }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,7 +97,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Nome'),
                 validator: (text) {
-                  if (text == null || text.trim().isEmpty) return 'O nome é obrigatório';
+                  if (text == null || text.trim().isEmpty) {
+                    return 'O nome é obrigatório';
+                  }
                   return null;
                 },
               ),
@@ -103,8 +108,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _usernameController,
                 decoration: const InputDecoration(labelText: 'Nome de Usuário'),
                 validator: (text) {
-                  if (text == null || text.trim().isEmpty) return 'O nome de usuário é obrigatório';
-                  if (text.contains(' ')) return 'Não use espaços no nome de usuário';
+                  if (text == null || text.trim().isEmpty) {
+                    return 'O nome de usuário é obrigatório';
+                  }
+                  if (text.contains(' ')) {
+                    return 'Não use espaços no nome de usuário';
+                  }
                   return null;
                 },
               ),
@@ -114,8 +123,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: const InputDecoration(labelText: 'Email'),
                 keyboardType: TextInputType.emailAddress,
                 validator: (text) {
-                  if (text == null || text.trim().isEmpty) return 'O email é obrigatório';
-                  if (!text.contains('@')) return 'Digite um email válido com @';
+                  if (text == null || text.trim().isEmpty) {
+                    return 'O email é obrigatório';
+                  }
+                  if (!text.contains('@')) {
+                    return 'Digite um email válido com @';
+                  }
                   return null;
                 },
               ),
@@ -125,10 +138,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: true,
                 decoration: const InputDecoration(labelText: 'Senha'),
                 validator: (text) {
-                  if (text == null || text.trim().isEmpty) return 'A senha é obrigatória';
-                  if (text.length < 6) return 'A senha deve ter no mínimo 6 caracteres';
+                  if (text == null || text.trim().isEmpty) {
+                    return 'A senha é obrigatória';
+                  }
+                  if (text.length < 6) {
+                    return 'A senha deve ter no mínimo 6 caracteres';
+                  }
                   return null;
                 },
+              ),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<UserRole>(
+                initialValue: _selectedRole,
+                decoration: InputDecoration(
+                  labelText: 'Tipo de Perfil',
+                  helperText: _selectedRole == UserRole.teacher
+                      ? 'Contas de professor precisam da aprovação de um administrador.'
+                      : null,
+                  helperMaxLines: 2,
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: UserRole.student,
+                    child: Text('Estudante'),
+                  ),
+                  DropdownMenuItem(
+                    value: UserRole.teacher,
+                    child: Text('Professor'),
+                  ),
+                ],
+                onChanged: _isLoading
+                    ? null
+                    : (UserRole? value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedRole = value;
+                          });
+                        }
+                      },
               ),
               const SizedBox(height: 40),
               ElevatedButton(
@@ -141,7 +188,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
                       )
                     : const Text('REGISTRAR', style: TextStyle(color: Colors.black)),
               ),

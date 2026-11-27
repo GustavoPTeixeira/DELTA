@@ -1,10 +1,31 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum UserRole {
+  student('student'),
+  // Signed up as "Professor"; waits for an admin to set role to 'teacher'.
+  teacherPending('teacher_pending'),
+  teacher('teacher');
+
+  const UserRole(this.value);
+
+  /// Value stored in Firestore.
+  final String value;
+
+  static UserRole fromString(String? value) {
+    final normalized = value?.trim().toLowerCase();
+    return UserRole.values.firstWhere(
+      (role) => role.value == normalized,
+      orElse: () => UserRole.student,
+    );
+  }
+}
+
 class UserModel {
   final String uid;
   final String name;
   final String username;
   final String email;
+  final UserRole role;
   final DateTime? createdAt;
 
   const UserModel({
@@ -12,14 +33,19 @@ class UserModel {
     required this.name,
     required this.username,
     required this.email,
+    this.role = UserRole.student,
     this.createdAt,
   });
+
+  bool get isTeacher => role == UserRole.teacher;
+  bool get isPendingTeacher => role == UserRole.teacherPending;
 
    UserModel copyWith({
     String? uid,
     String? name,
     String? username,
     String? email,
+    UserRole? role,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -27,6 +53,7 @@ class UserModel {
       name: name ?? this.name,
       username: username ?? this.username,
       email: email ?? this.email,
+      role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -37,6 +64,7 @@ class UserModel {
       'name': name,
       'username': username,
       'email': email,
+      'role': role.value,
       'createdAt': createdAt != null
         ? Timestamp.fromDate(createdAt!)
         : FieldValue.serverTimestamp(),
@@ -56,6 +84,7 @@ class UserModel {
     name: map['name'] ?? '',
     username: map['username'] as String? ?? '',
     email: map['email'] as String? ?? '',
+    role: UserRole.fromString(map['role'] as String?),
     createdAt: parsedDate ?? DateTime.now(), 
   );
 }

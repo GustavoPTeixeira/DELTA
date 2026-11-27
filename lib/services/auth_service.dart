@@ -48,6 +48,7 @@ class AuthService {
     required String username,
     required String email,
     required String password,
+    UserRole role = UserRole.student,
   }) async {
     final cleanUsername = username.trim().toLowerCase();
     final cleanEmail = email.trim().toLowerCase();
@@ -70,6 +71,8 @@ class AuthService {
         name: name.trim(),
         username: cleanUsername,
         email: cleanEmail,
+        // Teachers can't self-promote: an admin changes teacher_pending to teacher.
+        role: role == UserRole.teacher ? UserRole.teacherPending : role,
       );
 
       await _firestore.collection('users').doc(uid).set(userModel.toMap());
@@ -164,6 +167,16 @@ class AuthService {
         return e.message ?? 'Ocorreu um erro desconhecido. Tente novamente.';
     }
 }
+  /// Emits the profile whenever users/{uid} changes, and null while it doesn't
+  /// exist yet (right after sign-up, before the document is written).
+  Stream<UserModel?> watchUserProfile(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
+      final data = doc.data();
+      if (!doc.exists || data == null) return null;
+      return UserModel.fromMap(data, doc.id);
+    });
+  }
+
   Future<UserModel?> getUserProfile(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
