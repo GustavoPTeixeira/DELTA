@@ -63,3 +63,16 @@ Today there is a single Firebase project, `delta-eae4d`, and every run (`flutter
 - [ ] Screenshot of the Emulator UI with the seeded users
 - [ ] Screenshot of the production console with no test accounts after TC01
 - [ ] README section reviewed by someone running it for the first time
+
+---
+
+### ✅ Status (2026-11-27)
+**Decision:** the `delta-dev` project (scope item 2 and the "DELTA (dev)" launch config) was postponed to BL-14. Until then, running with no flags still uses production, so **Scenario 2 is not met yet**; the README warns about it.
+
+| ID | Status | Notes |
+|---|---|---|
+| **TC01** | ⬜ Not run | `_connectToEmulators()` is in `main.dart` (analyzer clean, 27 tests pass), but the app wasn't run against the emulators; skipped on 2026-11-27 |
+| **TC02** | ⏸️ Postponed | Needs `delta-dev` (BL-14) |
+| **TC03** | ✅ | `dart run tool/seed_emulator.dart` creates 3 users. Login and the unauthenticated username lookup work through the rules, and running it twice still gives 3 accounts |
+| **TC04** | ⬜ Not run | Android emulator → `10.0.2.2` is in the code but untested |
+| **TC05** | ⏸️ Postponed | Release builds have no flag, so they use prod; recheck in BL-14 |
