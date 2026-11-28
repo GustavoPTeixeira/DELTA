@@ -52,10 +52,10 @@ Each item has a stable ID (`BL-xx`) used in branch names and commits. Detailed s
 
 **Phase 0 · Close what's open**
 - [x] **BL-19:** TC08 manual test ✅ · PR #9 merged into `main` ✅ · ⬜ audit existing teachers in the console
-- [ ] **BL-00:** ✅ version `docs/` · ✅ PRs straight into `main` · ✅ branch cleanup · ⬜ merge the BL-00 PR (details [below](#bl-00--repo-housekeeping-no-ticket-file))
+- [x] **BL-00:** ✅ version `docs/` · ✅ PRs straight into `main` · ✅ branch cleanup · ✅ PR #10 merged (details [below](#bl-00--repo-housekeeping-no-ticket-file))
 
 **Phase 1 · Make what exists correct**
-- [ ] **BL-05:** run the app against the local emulators, so manual tests stop creating real accounts in production
+- [x] **BL-05:** app connects with `--dart-define=USE_EMULATORS=true` · seed script `tool/seed_emulator.dart` · VS Code launch configs · README section · `delta-dev` postponed to BL-14
 - [ ] **BL-01:** `invalid-credentials` → `invalid-credential` · stop trimming passwords · delete the Auth user if the profile write fails · no fake `createdAt` · pt-BR messages and one generic login error
 - [ ] **BL-02:** close the unauthenticated `list` on `users` · atomic `usernames/{username}` + migration · ❓ username login: Cloud Function (Blaze plan) or e-mail only (free)
 - [ ] **BL-03:** CI runs `flutter analyze` + `flutter test` on every PR · rename the package to `delta_app`
@@ -88,13 +88,12 @@ Each item has a stable ID (`BL-xx`) used in branch names and commits. Detailed s
 
 | ID | Item | Type | Pts | Phase | Depends on | Ticket | Was (Jira) |
 |---|---|---|---|---|---|---|---|
-| BL-00 | Repo housekeeping: PRs straight into `main`, merged branches deleted, `docs/` versioned. PR open | Chore | 1 | 0 | — | (below) | — |
+| BL-05 | Local Emulator Suite: app connection, seed script, launch configs, README. `delta-dev` postponed to BL-14 (2026-11-27). TC03 ✅; TC01 and TC04 not run | Chore | 3 | 1 | — | [10](tickets/10-dev-environment-emulators.md) | — |
 
-## 📋 Ready — Phases 0 and 1
+## 📋 Ready — Phase 1
 
 | ID | Item | Type | Pts | Phase | Depends on | Ticket | Was (Jira) |
 |---|---|---|---|---|---|---|---|
-| BL-05 | Dev Firebase project and local Emulator Suite | Chore | 3 | 1 | — | [10](tickets/10-dev-environment-emulators.md) | — |
 | BL-01 | Fix bugs in the sign-up, login and profile flows (sign-up race and profile error moved to BL-19) | Bug | 3 | 1 | BL-05 | [01](tickets/01-fix-auth-bugs.md) | DEL-17 |
 | BL-02 | Harden Firestore rules and guarantee unique usernames (teacher_pending done in BL-19) | Story | 5 | 1 | BL-01 | [02](tickets/02-security-rules-hardening.md) | DEL-18 |
 | BL-03 | CI pipeline and rename the package to delta_app | Chore | 2 | 1 | — | [03](tickets/03-ci-and-package-rename.md) | DEL-16 |
@@ -111,7 +110,7 @@ Each item has a stable ID (`BL-xx`) used in branch names and commits. Detailed s
 | BL-04 | QA safety net: QuestionScreen and ProfileScreen tests + coverage gate (AuthService tests started in BL-19) | QA | 5 | 4 | BL-01, BL-03 | [09](tickets/09-qa-safety-net.md) | — |
 | BL-07 | Navigation with go_router, DELTA theme and shared components; apply the Screen Board | Story | 8 | 🎨 Layout | Phase 4 | [05](tickets/05-router-theme-validators.md) | DEL-15 |
 | BL-10 | Usability test with 5 ninth-graders | UX research | 3 | 🎨 Layout | BL-07 | [11](tickets/11-usability-test.md) | — |
-| BL-14 | Release readiness: app ID, name, icon, splash, signing, App Check, hosting | Chore | 5 | 🎨 Layout | BL-03, BL-07 | [14](tickets/14-release-readiness.md) | — |
+| BL-14 | Release readiness: app ID, name, icon, splash, signing, App Check, hosting, `delta-dev` project for testing on real phones (moved from BL-05) | Chore | 5 | 🎨 Layout | BL-03, BL-07 | [14](tickets/14-release-readiness.md) | — |
 | BL-06 | Repository layer and state management with Riverpod (postponed 2026-11-27; optional) | Refactor | 8 | Optional | Phase 3 | [04](tickets/04-riverpod-repositories.md) | DEL-14 |
 
 ## 🧊 Icebox
@@ -127,6 +126,7 @@ Each item has a stable ID (`BL-xx`) used in branch names and commits. Detailed s
 
 | ID | Item | PR | Merged into | Was (Jira) |
 |---|---|---|---|---|
+| BL-00 | Repo housekeeping: PRs straight into `main`, merged branches deleted, `docs/` versioned | #10 | `main` (2026-11-27) | — |
 | BL-19 | Finish the teacher role: pending approval, sign-up race, docs, tests (rules deployed 2026-11-08, TC08 passed 2026-11-27) | #9 | `main` (2026-11-27) | DEL-4 |
 | — | User profile screen (RF3) | #3 | `main` | — |
 | — | Teacher role and role-based access control (Teacher Profile T0) | #5 (KAN-5) | `main` (via #9) | DEL-4, DEL-20 |
@@ -154,5 +154,5 @@ Each item has a stable ID (`BL-xx`) used in branch names and commits. Detailed s
 
 | Phase | Dates | Planned pts | Delivered pts | Notes |
 |---|---|---|---|---|
-| 0 | | 6 | | |
+| 0 | 2026-11-08 → 2026-11-27 | 6 | 6 | BL-19 (#9) and BL-00 (#10). Teacher audit still open |
 | 1 | | 13 | | |

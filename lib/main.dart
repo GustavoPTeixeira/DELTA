@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'models/user_model.dart';
 import 'screens/login_screen.dart';
@@ -9,14 +11,29 @@ import 'screens/subjects_screen.dart';
 import 'screens/teacher_home_screen.dart';
 import 'services/auth_service.dart';
 
+/// Set with: flutter run --dart-define=USE_EMULATORS=true
+const bool useEmulators = bool.fromEnvironment('USE_EMULATORS');
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  if (useEmulators) await _connectToEmulators();
 
   runApp(const DeltaApp());
+}
+
+/// Points Auth and Firestore to the local Emulator Suite instead of production.
+Future<void> _connectToEmulators() async {
+  // The Android emulator reaches your computer through 10.0.2.2, not localhost.
+  final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  final host = isAndroid ? '10.0.2.2' : 'localhost';
+
+  await FirebaseAuth.instance.useAuthEmulator(host, 9099);
+  FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
+  debugPrint('DELTA is using the local Firebase emulators at $host');
 }
 
 class DeltaApp extends StatelessWidget {

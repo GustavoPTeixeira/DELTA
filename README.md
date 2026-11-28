@@ -97,6 +97,32 @@ flutter run -d windows
 flutter run -d chrome
 ```
 
+> ⚠️ Sem nenhuma flag, o app usa o projeto de **produção** (`delta-eae4d`). Para desenvolver e testar, prefira os emuladores abaixo.
+
+### Rodando com os emuladores (desenvolvimento)
+O [Firebase Emulator Suite](https://firebase.google.com/docs/emulator-suite) roda o Auth e o Firestore no seu computador, com as mesmas regras de produção. Nenhuma conta de teste vai para produção. Requer Java 21+ e o Firebase CLI.
+
+```bash
+# Terminal 1: inicia o Auth (9099), o Firestore (8080) e a interface em http://localhost:4000
+firebase emulators:start --project delta-eae4d
+
+# Terminal 2: cria os usuários de teste (apaga os dados anteriores do emulador)
+dart run tool/seed_emulator.dart
+
+# Terminal 2: roda o app conectado aos emuladores
+flutter run -d chrome --dart-define=USE_EMULATORS=true
+```
+
+No VS Code, dá para fazer o último passo em **Run and Debug → "DELTA (emulators)"** (F5).
+
+| Usuário | E-mail | Perfil | Tela inicial |
+|---|---|---|---|
+| `aluno` | aluno@delta.test | Aluno | Matérias |
+| `pendente` | pendente@delta.test | Professor aguardando aprovação | Aguardando aprovação |
+| `professor` | professor@delta.test | Professor | Área do Professor |
+
+A senha de todos é `delta123`. Os dados do emulador somem quando ele é encerrado (Ctrl+C); é só rodar o seed de novo.
+
 ### Testes
 ```bash
 # Testes unitários e de widget (não acessam o Firebase real)
